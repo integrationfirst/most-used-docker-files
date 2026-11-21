@@ -40,13 +40,13 @@ wsl --shutdown
 
 4. Relaunch WSL. Windows and WSL will now share the exact same network interfaces and `localhost` mapping.
 
-# Browsing the setups
+## Browsing the setups
 
 **Folder layout**
 
 Each container setup lives in its own folder under `services/`:
 
-```
+```text
 services/<service>/<file>        e.g. services/kafka/kafka, services/camunda/operate/application.yaml
 services/index.json              the list of setup files the browser page shows
 ```
@@ -55,7 +55,7 @@ services/index.json              the list of setup files the browser page shows
 
 From the repo root run:
 
-```
+```sh
 python3 -m http.server
 ```
 
