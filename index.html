@@ -76,11 +76,13 @@
   .title { display: flex; align-items: center; gap: 16px; }
   .logo { display: block; width: 110px; height: auto; }
   h1 { margin: 0; font-family: "Helvetica Neue Condensed", Inter, sans-serif; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
-  .theme-toggle {
-    flex-shrink: 0; margin-left: auto; height: 42px; padding: 0 16px; border: 0; border-radius: 5px;
+  /* Brand button: the theme toggle and the viewer's Wrap and Copy buttons. */
+  .theme-toggle, .viewer .tools button {
+    height: 42px; padding: 0 16px; border: 0; border-radius: 5px;
     background: var(--accent); color: var(--black); white-space: nowrap; cursor: pointer;
   }
-  .theme-toggle:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .theme-toggle { flex-shrink: 0; margin-left: auto; }
+  .theme-toggle:focus-visible, .viewer .tools button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   .sub { margin: 4px 0 0; color: var(--quiet); font-size: 12px; }
   .banner {
     margin: 12px max(32px, (100% - 1408px) / 2) 0; padding: 10px 14px; border: 1px solid var(--error-border);
@@ -134,6 +136,13 @@
     margin: 0; padding: 12px; background: var(--surface-strong); border: 1px solid var(--divider); border-radius: 4px;
     font-family: var(--mono); font-size: 12.5px; line-height: 1.55; white-space: pre; overflow: auto;
   }
+  .viewer pre.wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .viewer .tools { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+  /* Visually hidden: screen readers announce the copy result, sighted users see it on the button. */
+  .viewer .status {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+  }
 </style>
 </head>
 <body>
@@ -160,6 +169,7 @@ const $ = (id) => document.getElementById(id)
 
 const dates = new Map() // path -> formatted date or '-'
 let selected = null
+let copyTimer = null
 
 function el(tag, cls, text) {
   const node = document.createElement(tag)
@@ -202,6 +212,7 @@ async function loadDate(path, span) {
 }
 
 async function select(path, button) {
+  clearTimeout(copyTimer)
   if (selected) selected.button.removeAttribute('aria-current')
   selected = { path, button }
   button.setAttribute('aria-current', 'true')
@@ -214,13 +225,50 @@ async function select(path, button) {
   try {
     const text = await fetchText(fileUrl(path))
     if (selected.path !== path) return
-    viewer.append(el('pre', null, text))
+    const pre = el('pre', null, text)
+    viewer.append(toolbar(text, pre), pre)
   } catch (err) {
     if (selected.path !== path) return
     viewer.append(el('p', 'error', `Could not load services/${path}: ${err.message}`))
   }
   // In the one-column layout the viewer sits below the list, so bring it into view.
   if (matchMedia('(max-width: 760px)').matches) viewer.scrollIntoView({ block: 'start', behavior: 'smooth' })
+}
+
+// The viewer's Wrap and Copy buttons, shown only with a loaded file.
+function toolbar(text, pre) {
+  const wrapButton = el('button')
+  wrapButton.type = 'button'
+  const copyButton = el('button', null, 'Copy')
+  copyButton.type = 'button'
+  const status = el('span', 'status')
+  status.setAttribute('role', 'status')
+
+  applyWrap(pre, wrapButton)
+  wrapButton.addEventListener('click', () => {
+    wrap = !wrap
+    applyWrap(pre, wrapButton)
+    try { localStorage.setItem('wrap', wrap ? 'on' : 'off') } catch {}
+  })
+  copyButton.addEventListener('click', async () => {
+    let ok = false
+    try {
+      await navigator.clipboard.writeText(text)
+      ok = true
+    } catch {}
+    if (!copyButton.isConnected) return
+    copyButton.textContent = ok ? 'Copied' : 'Copy failed'
+    status.textContent = ok ? 'Copied to clipboard' : 'Could not copy to the clipboard'
+    clearTimeout(copyTimer)
+    copyTimer = setTimeout(() => {
+      copyButton.textContent = 'Copy'
+      status.textContent = ''
+    }, 2000)
+  })
+
+  const tools = el('div', 'tools')
+  tools.append(wrapButton, copyButton, status)
+  return tools
 }
 
 function render(files) {
@@ -278,6 +326,16 @@ $('theme-toggle').addEventListener('click', () => {
   applyTheme(chosenTheme)
   try { localStorage.setItem('theme', chosenTheme) } catch {}
 })
+
+// Wrap: off unless the saved choice is 'on'. The mode carries over to every file viewed afterwards.
+let wrap = false
+try { wrap = localStorage.getItem('wrap') === 'on' } catch {}
+
+function applyWrap(pre, button) {
+  pre.classList.toggle('wrap', wrap)
+  button.textContent = wrap ? 'Wrap: On' : 'Wrap: Off'
+  button.setAttribute('aria-pressed', String(wrap))
+}
 
 async function init() {
   if (location.protocol === 'file:') {
