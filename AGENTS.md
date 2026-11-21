@@ -1,25 +1,32 @@
 # AGENTS.md
 
 A personal collection of ready-to-run container setups for local development:
-podman/docker run commands (plain-text notes such as `kafka`, `n8n`, `elk`),
-compose-style YAML (`postgres.yaml`, `pgadmin.yml`) and service config
-(`camunda/`). The target environment is Podman on Windows 11 with WSL2 (see
-`README.md`).
+podman/docker run commands (plain-text notes such as `services/kafka/kafka`,
+`services/n8n/n8n`, `services/elk/elk`), compose-style YAML
+(`services/postgres/postgres.yaml`, `services/pgadmin/pgadmin.yml`) and service
+config (`services/camunda/`). The target environment is Podman on Windows 11
+with WSL2 (see `README.md`). `index.html` at the repo root is a static page for
+browsing the setups.
 
 ## Conventions
 
-- One service per file, named after the service. Plain-text notes start with a
-  short description and a host/container connectivity note, then the
-  copy-pasteable command(s).
-- Containers that talk to each other share the `ps` podman network (see
-  `network`).
+- Setups live in `services/<service>/`, one folder per service, with files
+  named after the service. Plain-text notes start with a short description and
+  a host/container connectivity note, then the copy-pasteable command(s).
+- A new setup file must also be added to `services/index.json` (paths relative
+  to `services/`, sorted), which is the list the browser page reads.
+- Containers that talk to each other share the `ps` podman network (defined in
+  `services/network/network`).
 - Credentials in these files are local-dev defaults only. Never commit real
   secrets.
 
 ## Setup
 
 A fresh checkout needs nothing installed beyond `python3` with PyYAML
-(`pip install pyyaml`) for the checks. There is no dev server.
+(`pip install pyyaml`) for the checks. There is no build step or dev server
+beyond a static file server: to view the browser page, run
+`python3 -m http.server` from the repo root and open http://localhost:8000/
+(opening `index.html` from disk via `file://` does not work).
 
 ## Validation
 
