@@ -88,7 +88,7 @@ Only these seven colours are used (plus `transparent`, `currentColor` and `inher
 | White | `#FFFFFF` | Page background, the selected list entry and the code block |
 | Orange | `#FF5308` | The only accent: the 4px bar on the selected list entry. Never used for text |
 | Ink | `#1D1D1D` | Body and heading text, the selected entry's border and the keyboard focus outline |
-| Black | `#000000` | The logo wordmark. Also allowed for focus outlines |
+| Black | `#000000` | The logo wordmark. Declared as `--black` in the page palette but not used by the page CSS yet; allowed for focus outlines (the page uses ink) |
 | Light grey | `#F4F4F4` | Secondary surfaces: list entries and the viewer panel |
 | Burnt orange | `#9A3205` | Error text and border (the HTTP banner and file load errors), in place of red |
 | Slate | `#343A40` | Quiet text (subtitle, dates, hints), group dividers, the hover border and the code block border |
