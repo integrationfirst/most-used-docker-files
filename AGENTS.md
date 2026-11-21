@@ -22,6 +22,8 @@ fonts, corners, max width and logo rules).
   `services/network/network`).
 - Credentials in these files are local-dev defaults only. Never commit real
   secrets.
+- When a new git tag is made, update `version.json` at the repo root to the
+  tag name: the page footer shows it.
 
 ## Setup
 

@@ -71,7 +71,7 @@
   }
   button { font: inherit; color: inherit; }
 
-  header, main { max-width: 1472px; margin: 0 auto; }
+  header, main, footer { max-width: 1472px; margin: 0 auto; }
   header { padding: 28px 32px 8px; }
   .title { display: flex; align-items: center; gap: 16px; }
   .logo { display: block; width: 110px; height: auto; }
@@ -90,6 +90,8 @@
     white-space: pre-wrap;
   }
   .banner[hidden] { display: none; }
+  footer { padding: 0 32px 24px; text-align: center; color: var(--quiet); font-size: 12px; }
+  footer[hidden] { display: none; }
 
   main {
     display: grid; grid-template-columns: minmax(240px, 320px) minmax(0, 1fr); gap: 20px;
@@ -161,8 +163,10 @@
     <p class="hint">Select a file to view its contents.</p>
   </section>
 </main>
+<footer id="version" hidden></footer>
 <script>
 const INDEX = 'services/index.json'
+const VERSION = 'version.json'
 const SERVE = 'From the repo root run: python3 -m http.server\nthen open http://localhost:8000/'
 
 const $ = (id) => document.getElementById(id)
@@ -337,12 +341,22 @@ function applyWrap(pre, button) {
   button.setAttribute('aria-pressed', String(wrap))
 }
 
+async function loadVersion() {
+  try {
+    const version = JSON.parse(await fetchText(VERSION)).version
+    if (typeof version !== 'string' || !version.trim()) return
+    $('version').textContent = version.trim()
+    $('version').hidden = false
+  } catch {}
+}
+
 async function init() {
   if (location.protocol === 'file:') {
     showBanner('This page must be served over HTTP: browsers block reading local files from a file:// page.\n' + SERVE)
     $('viewer').replaceChildren(el('p', 'hint', 'Nothing to show when opened from disk.'))
     return
   }
+  loadVersion()
   let files
   try {
     const data = JSON.parse(await fetchText(INDEX))
