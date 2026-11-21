@@ -1,0 +1,19 @@
+{
+  "files": [
+    "apisix/apisix",
+    "camunda/camunda.txt",
+    "camunda/operate/application.yaml",
+    "camunda/zeebe/application.yaml",
+    "dymamodb/dymamodb",
+    "elk/elk",
+    "flowable/flowable.md",
+    "infinispan-server/infinispan-server",
+    "kafka/kafka",
+    "minio/minio",
+    "n8n/n8n",
+    "network/network",
+    "pgadmin/pgadmin.yml",
+    "postgres/postgres.yaml",
+    "wso2mi/wso2mi"
+  ]
+}
