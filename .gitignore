@@ -1,1 +1,3 @@
 .venv
+/factory/jobs/
+/.worktrees/
