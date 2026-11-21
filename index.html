@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Container setups</title>
+<style>
+  :root {
+    --bg: #14151b;
+    --panel: #1a1c24;
+    --card: #20222c;
+    --card-hover: #252835;
+    --line: #2b2e3b;
+    --text: #e4e5ea;
+    --muted: #868ba0;
+    --faint: #5b6075;
+    --active: #8be9fd;
+    --human: #ff5555;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font: inherit; color: inherit; }
+
+  header { padding: 28px 32px 8px; }
+  h1 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+  .sub { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+  .banner {
+    margin: 12px 32px 0; padding: 10px 14px; border: 1px solid var(--human);
+    border-radius: 8px; color: var(--human); font-family: var(--mono); font-size: 12px;
+    white-space: pre-wrap;
+  }
+  .banner[hidden] { display: none; }
+
+  main {
+    display: grid; grid-template-columns: minmax(240px, 320px) minmax(0, 1fr); gap: 20px;
+    padding: 20px 32px 40px; align-items: start;
+  }
+  @media (max-width: 760px) { main { grid-template-columns: 1fr; } }
+
+  /* List */
+  nav { min-width: 0; }
+  .group { margin-bottom: 16px; }
+  .group h2 {
+    margin: 0 0 6px; padding: 0 2px 6px; font-size: 13px; font-weight: 600;
+    border-bottom: 1px solid var(--line);
+  }
+  .group ul { list-style: none; margin: 0; padding: 0; }
+  .entry {
+    display: block; width: 100%; text-align: left; cursor: pointer;
+    background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+    padding: 7px 10px; margin-bottom: 6px; transition: background .15s, border-color .15s;
+  }
+  .entry:hover { background: var(--card-hover); }
+  .entry:focus-visible { outline: 2px solid var(--active); outline-offset: 2px; }
+  .entry[aria-current="true"] { border-color: var(--active); background: var(--card-hover); }
+  .entry .name { display: block; font-family: var(--mono); font-size: 13px; overflow-wrap: anywhere; }
+  .entry[aria-current="true"] .name { color: var(--active); }
+  .entry .date { display: block; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+  /* Viewer */
+  .viewer {
+    min-width: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: 14px 16px; position: sticky; top: 20px; max-height: calc(100vh - 40px); overflow: auto;
+  }
+  .viewer .path { margin: 0; font-family: var(--mono); font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+  .viewer .meta { margin: 2px 0 12px; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .viewer .hint { margin: 0; color: var(--muted); font-size: 13px; }
+  .viewer .error { margin: 0; color: var(--human); font-family: var(--mono); font-size: 12px; }
+  .viewer pre {
+    margin: 0; padding: 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.55; white-space: pre; overflow: auto;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Container setups</h1>
+  <p class="sub">Files under services/. Pick one to view it. Dates are file modification times on disk.</p>
+</header>
+<div class="banner" id="banner" role="alert" hidden></div>
+<main>
+  <nav id="list" aria-label="Setup files"></nav>
+  <section class="viewer" id="viewer" aria-live="polite">
+    <p class="hint">Select a file to view its contents.</p>
+  </section>
+</main>
+<script>
+const INDEX = 'services/index.json'
+const SERVE = 'From the repo root run: python3 -m http.server\nthen open http://localhost:8000/'
+
+const $ = (id) => document.getElementById(id)
+
+const dates = new Map() // path -> formatted date or '-'
+let selected = null
+
+function el(tag, cls, text) {
+  const node = document.createElement(tag)
+  if (cls) node.className = cls
+  if (text !== undefined) node.textContent = text
+  return node
+}
+
+function showBanner(text) {
+  $('banner').textContent = text
+  $('banner').hidden = false
+}
+
+function fileUrl(path) {
+  return 'services/' + path.split('/').map(encodeURIComponent).join('/')
+}
+
+async function fetchText(url) {
+  const res = await fetch(url, { cache: 'no-store' })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res.text()
+}
+
+function formatDate(header) {
+  if (!header) return '-'
+  const d = new Date(header)
+  if (isNaN(d.getTime())) return '-'
+  return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+}
+
+async function loadDate(path, span) {
+  let text = '-'
+  try {
+    const res = await fetch(fileUrl(path), { method: 'HEAD', cache: 'no-store' })
+    if (res.ok) text = formatDate(res.headers.get('Last-Modified'))
+  } catch {}
+  dates.set(path, text)
+  span.textContent = text
+  if (selected && selected.path === path) $('viewer').querySelector('.meta').textContent = 'Last modified: ' + text
+}
+
+async function select(path, button) {
+  if (selected) selected.button.removeAttribute('aria-current')
+  selected = { path, button }
+  button.setAttribute('aria-current', 'true')
+
+  const viewer = $('viewer')
+  viewer.replaceChildren(
+    el('p', 'path', 'services/' + path),
+    el('p', 'meta', 'Last modified: ' + (dates.get(path) || '…')),
+  )
+  try {
+    const text = await fetchText(fileUrl(path))
+    if (selected.path !== path) return
+    viewer.append(el('pre', null, text))
+  } catch (err) {
+    if (selected.path !== path) return
+    viewer.append(el('p', 'error', `Could not load services/${path}: ${err.message}`))
+  }
+  // In the one-column layout the viewer sits below the list, so bring it into view.
+  if (matchMedia('(max-width: 760px)').matches) viewer.scrollIntoView({ block: 'start', behavior: 'smooth' })
+}
+
+function render(files) {
+  const groups = new Map()
+  for (const path of [...files].sort()) {
+    const i = path.indexOf('/')
+    const service = i < 0 ? path : path.slice(0, i)
+    const name = i < 0 ? path : path.slice(i + 1)
+    if (!groups.has(service)) groups.set(service, [])
+    groups.get(service).push({ path, name })
+  }
+
+  const list = $('list')
+  list.replaceChildren()
+  for (const service of [...groups.keys()].sort()) {
+    const group = el('section', 'group')
+    group.append(el('h2', null, service))
+    const ul = el('ul')
+    for (const { path, name } of groups.get(service)) {
+      const button = el('button', 'entry')
+      button.type = 'button'
+      const date = el('span', 'date', '…')
+      button.append(el('span', 'name', name), date)
+      button.addEventListener('click', () => select(path, button))
+      const li = el('li')
+      li.append(button)
+      ul.append(li)
+      loadDate(path, date)
+    }
+    group.append(ul)
+    list.append(group)
+  }
+}
+
+async function init() {
+  if (location.protocol === 'file:') {
+    showBanner('This page must be served over HTTP: browsers block reading local files from a file:// page.\n' + SERVE)
+    $('viewer').replaceChildren(el('p', 'hint', 'Nothing to show when opened from disk.'))
+    return
+  }
+  let files
+  try {
+    const data = JSON.parse(await fetchText(INDEX))
+    files = data.files
+    if (!Array.isArray(files) || !files.every((f) => typeof f === 'string')) {
+      throw new Error('"files" must be an array of paths')
+    }
+  } catch (err) {
+    showBanner(`Could not load ${INDEX} (${err.message}).\n${SERVE}`)
+    return
+  }
+  render(files)
+}
+
+init()
+</script>
+</body>
+</html>
