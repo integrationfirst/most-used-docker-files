@@ -6,7 +6,10 @@ podman/docker run commands (plain-text notes such as `services/kafka/kafka`,
 (`services/postgres/postgres.yaml`, `services/pgadmin/pgadmin.yml`) and service
 config (`services/camunda/`). The target environment is Podman on Windows 11
 with WSL2 (see `README.md`). `index.html` at the repo root is a static page for
-browsing the setups.
+browsing the setups. `assets/` holds its static files: the brand logo
+(`assets/brand/`) and the self-hosted Inter font (`assets/fonts/`). When
+changing `index.html`, follow the "Brand" section in `README.md` (colours,
+fonts, corners, max width and logo rules).
 
 ## Conventions
 
