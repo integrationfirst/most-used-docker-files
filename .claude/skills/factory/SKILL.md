@@ -147,6 +147,11 @@ finished:
 - `ESCALATE`: `factory/bin/job advance <id> needs-human`. It marks the PR ready,
   posts the decision on it and labels the issue `factory:needs-human`.
 
+Every move to `needs-human` also sends a Telegram DM with the reason and the
+PR link to each ID in `notify.telegram.chat_ids` in `factory/config.json`. The
+bot token comes from `$TELEGRAM_BOT_TOKEN` or the `env_file` named there, never
+from the config. A failed send only prints a warning and doesn't stop the move.
+
 A job is finished for this run when it reaches `merged`, `rejected`,
 `needs-info` or `needs-human`.
 

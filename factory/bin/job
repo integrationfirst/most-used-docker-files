@@ -26,6 +26,8 @@ import os
 import re
 import subprocess
 import sys
+import urllib.parse
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -328,6 +330,50 @@ def sync(job):
     return job
 
 
+# ---- Notifications ---------------------------------------------------------
+
+
+def telegram_token(cfg):
+    """The bot token: $<token_env>, else that key in <env_file>. Never in config.json."""
+    key = cfg.get("token_env", "TELEGRAM_BOT_TOKEN")
+    if os.environ.get(key):
+        return os.environ[key].strip()
+    env_file = Path(os.path.expanduser(cfg.get("env_file", "~/.claude/channels/telegram/.env")))
+    if env_file.exists():
+        for line in env_file.read_text().splitlines():
+            k, _, v = line.partition("=")
+            if k.strip() == key and v.strip():
+                return v.strip().strip('"\'')
+    return None
+
+
+def notify_needs_human(job, why):
+    """Best effort: DM the configured Telegram users. Never blocks the transition."""
+    cfg = CONFIG.get("notify", {}).get("telegram", {})
+    chat_ids = [str(c) for c in cfg.get("chat_ids", [])]
+    if not cfg.get("enabled", True) or not chat_ids:
+        return
+    token = telegram_token(cfg)
+    if not token:
+        print("job: warning: telegram notify skipped, no bot token found", file=sys.stderr)
+        return
+    link = job["pr_url"] or job["issue_url"]
+    what = f"PR #{job['pr']}" if job["pr"] else f"issue #{job['issue']}"
+    text = (f"Factory: {job['id']} needs a human\n"
+            f"#{job['issue']} {job['title']}\n"
+            f"{what}: {link}\n\n{why}")
+    if len(text) > 4000:  # Telegram caps a message at 4096 characters
+        text = text[:3990] + "\n[…]"
+    for chat_id in chat_ids:
+        data = urllib.parse.urlencode({"chat_id": chat_id, "text": text,
+                                       "disable_web_page_preview": "true"}).encode()
+        try:
+            urllib.request.urlopen(f"https://api.telegram.org/bot{token}/sendMessage", data, timeout=10).read()
+        except Exception as e:  # the token is in the URL, so report the error type only
+            print(f"job: warning: telegram notify to {chat_id} failed: {type(e).__name__}"
+                  f"{' ' + str(e.code) if hasattr(e, 'code') else ''}", file=sys.stderr)
+
+
 # ---- Transitions -----------------------------------------------------------
 
 
@@ -488,7 +534,8 @@ def advance(job, stage):
         label("issue", job["issue"], remove=LABELS["needs_human"])
 
     if stage == "needs-human":
-        body = f"### Factory: needs a human\n\n{(d / 'decision.md').read_text().split(chr(10), 1)[1].strip()}"
+        why = (d / "decision.md").read_text().split(chr(10), 1)[1].strip()
+        body = f"### Factory: needs a human\n\n{why}"
         if job["pr"]:
             if gh_json("pr", "view", str(job["pr"]), "--json", "isDraft")["isDraft"]:
                 gh("pr", "ready", str(job["pr"]))
@@ -496,6 +543,7 @@ def advance(job, stage):
         else:
             comment("issue", job["issue"], body)
         label("issue", job["issue"], add=LABELS["needs_human"])
+        notify_needs_human(job, why)
 
     if stage in TERMINAL and Path(job["worktree"]).exists():
         run(["git", "worktree", "remove", "--force", job["worktree"]])
