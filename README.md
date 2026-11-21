@@ -65,6 +65,8 @@ then open http://localhost:8000/.
 
 The page lists the setups grouped by service, with each file's last-modified date. Pick a file to view its contents as read-only text. The `Theme` button in the header switches between light and dark; the default follows your OS setting, and your choice is remembered in the browser.
 
+The footer shows the app version, read from `version.json` at the repo root. Whenever a new git tag is made, update `version.json` by hand to the new tag name. If the file can't be read, the footer is hidden.
+
 **Add a new setup**
 
 1. Create `services/<service>/<file>`.
@@ -89,9 +91,9 @@ Only these seven colours are used (plus `transparent`, `currentColor` and `inher
 | Orange | `#FF5308` | The only accent: the 4px bar on the selected list entry and the theme button fill. Dark: also the error banner border. Never used for text |
 | Ink | `#1D1D1D` | Light: body and heading text, the selected entry's border and the keyboard focus outline. Dark: secondary surfaces (list entries and the viewer panel) |
 | Black | `#000000` | The logo wordmark and the theme button text. Dark: page background, the selected list entry and the code block. Also allowed for focus outlines (the light theme uses ink) |
-| Light grey | `#F4F4F4` | Light: secondary surfaces (list entries and the viewer panel). Dark: quiet text (subtitle, dates, meta, hints) and the hover border |
+| Light grey | `#F4F4F4` | Light: secondary surfaces (list entries and the viewer panel). Dark: quiet text (subtitle, dates, meta, hints, footer version) and the hover border |
 | Burnt orange | `#9A3205` | Light: error text and border (the HTTP banner and file load errors), in place of red. Not used in dark |
-| Slate | `#343A40` | Group dividers and the code block border in both themes. Light: also quiet text (subtitle, dates, hints) and the hover border |
+| Slate | `#343A40` | Group dividers and the code block border in both themes. Light: also quiet text (subtitle, dates, hints, footer version) and the hover border |
 
 **Typography**
 
