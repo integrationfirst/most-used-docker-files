@@ -4,6 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Container setups</title>
+<script>
+  // Apply the saved theme, or else the OS preference, before first paint. The toggle code is at the end of the page.
+  {
+    let saved = null
+    try { saved = localStorage.getItem('theme') } catch {}
+    document.documentElement.dataset.theme = saved === 'light' || saved === 'dark' ? saved
+      : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  }
+</script>
 <style>
   /* Simpson Strong-Tie brand: see the "Brand" section in README.md. */
   @font-face {
@@ -23,13 +32,40 @@
     --burnt: #9A3205;
     --slate: #343A40;
     --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    /* Semantic colours: light theme (the default). */
+    --bg: var(--white);
+    --surface: var(--grey);
+    --surface-strong: var(--white);
+    --text: var(--ink);
+    --quiet: var(--slate);
+    --error: var(--burnt);
+    --error-border: var(--burnt);
+    --divider: var(--slate);
+    --hover-border: var(--slate);
+    --selected-border: var(--ink);
+    --focus: var(--ink);
+    --accent: var(--orange);
     color-scheme: light;
+  }
+  :root[data-theme="dark"] {
+    --bg: var(--black);
+    --surface: var(--ink);
+    --surface-strong: var(--black);
+    --text: var(--white);
+    --quiet: var(--grey);
+    --error: var(--white);
+    --error-border: var(--orange);
+    --divider: var(--slate);
+    --hover-border: var(--grey);
+    --selected-border: var(--white);
+    --focus: var(--white);
+    color-scheme: dark;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; }
   body {
-    background: var(--white);
-    color: var(--ink);
+    background: var(--bg);
+    color: var(--text);
     font-family: "Helvetica Neue", Inter, sans-serif; font-weight: 400; font-size: 14px; line-height: 1.5;
     -webkit-font-smoothing: antialiased;
   }
@@ -40,10 +76,15 @@
   .title { display: flex; align-items: center; gap: 16px; }
   .logo { display: block; width: 110px; height: auto; }
   h1 { margin: 0; font-family: "Helvetica Neue Condensed", Inter, sans-serif; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
-  .sub { margin: 4px 0 0; color: var(--slate); font-size: 12px; }
+  .theme-toggle {
+    flex-shrink: 0; margin-left: auto; height: 42px; padding: 0 16px; border: 0; border-radius: 5px;
+    background: var(--accent); color: var(--black); white-space: nowrap; cursor: pointer;
+  }
+  .theme-toggle:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .sub { margin: 4px 0 0; color: var(--quiet); font-size: 12px; }
   .banner {
-    margin: 12px max(32px, (100% - 1408px) / 2) 0; padding: 10px 14px; border: 1px solid var(--burnt);
-    border-radius: 4px; color: var(--burnt); font-family: var(--mono); font-size: 12px;
+    margin: 12px max(32px, (100% - 1408px) / 2) 0; padding: 10px 14px; border: 1px solid var(--error-border);
+    border-radius: 4px; color: var(--error); font-family: var(--mono); font-size: 12px;
     white-space: pre-wrap;
   }
   .banner[hidden] { display: none; }
@@ -62,35 +103,35 @@
   .group { margin-bottom: 16px; }
   .group h2 {
     margin: 0 0 6px; padding: 0 2px 6px; font-family: "Helvetica Neue Condensed", Inter, sans-serif; font-size: 13px; font-weight: 700;
-    border-bottom: 1px solid var(--slate);
+    border-bottom: 1px solid var(--divider);
   }
   .group ul { list-style: none; margin: 0; padding: 0; }
   .entry {
     display: block; width: 100%; text-align: left; cursor: pointer;
-    background: var(--grey); border: 1px solid var(--grey); border-radius: 4px;
+    background: var(--surface); border: 1px solid var(--surface); border-radius: 4px;
     padding: 7px 10px; margin-bottom: 6px; transition: background .15s, border-color .15s;
   }
-  .entry:hover { border-color: var(--slate); }
-  .entry:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .entry:hover { border-color: var(--hover-border); }
+  .entry:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   /* Selected: white fill so the orange bar sits against white, plus a thicker border and bold name. */
   .entry[aria-current="true"] {
-    background: var(--white); border-color: var(--ink); border-left: 4px solid var(--orange); padding-left: 7px;
+    background: var(--surface-strong); border-color: var(--selected-border); border-left: 4px solid var(--accent); padding-left: 7px;
   }
   .entry .name { display: block; font-family: var(--mono); font-size: 13px; overflow-wrap: anywhere; }
   .entry[aria-current="true"] .name { font-weight: 700; }
-  .entry .date { display: block; font-family: var(--mono); font-size: 11px; color: var(--slate); }
+  .entry .date { display: block; font-family: var(--mono); font-size: 11px; color: var(--quiet); }
 
   /* Viewer */
   .viewer {
-    min-width: 0; background: var(--grey); border: 1px solid var(--grey); border-radius: 4px;
+    min-width: 0; background: var(--surface); border: 1px solid var(--surface); border-radius: 4px;
     padding: 14px 16px; position: sticky; top: 20px; max-height: calc(100vh - 40px); overflow: auto;
   }
   .viewer .path { margin: 0; font-family: var(--mono); font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
-  .viewer .meta { margin: 2px 0 12px; font-family: var(--mono); font-size: 11px; color: var(--slate); }
-  .viewer .hint { margin: 0; color: var(--slate); font-size: 13px; }
-  .viewer .error { margin: 0; color: var(--burnt); font-family: var(--mono); font-size: 12px; }
+  .viewer .meta { margin: 2px 0 12px; font-family: var(--mono); font-size: 11px; color: var(--quiet); }
+  .viewer .hint { margin: 0; color: var(--quiet); font-size: 13px; }
+  .viewer .error { margin: 0; color: var(--error); font-family: var(--mono); font-size: 12px; }
   .viewer pre {
-    margin: 0; padding: 12px; background: var(--white); border: 1px solid var(--slate); border-radius: 4px;
+    margin: 0; padding: 12px; background: var(--surface-strong); border: 1px solid var(--divider); border-radius: 4px;
     font-family: var(--mono); font-size: 12.5px; line-height: 1.55; white-space: pre; overflow: auto;
   }
 </style>
@@ -100,6 +141,7 @@
   <div class="title">
     <img class="logo" src="assets/brand/simpson-strong-tie-logo.svg" alt="Simpson Strong-Tie">
     <h1>Container setups</h1>
+    <button type="button" class="theme-toggle" id="theme-toggle">Theme: Light</button>
   </div>
   <p class="sub">Files under services/. Pick one to view it. Dates are file modification times on disk.</p>
 </header>
@@ -212,6 +254,30 @@ function render(files) {
     list.append(group)
   }
 }
+
+// Theme: data-theme is set in <head> before first paint. An explicit choice is saved and wins over the OS
+// setting; until then the page follows the OS live.
+const darkScheme = matchMedia('(prefers-color-scheme: dark)')
+let chosenTheme = null
+try {
+  const saved = localStorage.getItem('theme')
+  if (saved === 'light' || saved === 'dark') chosenTheme = saved
+} catch {}
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme
+  $('theme-toggle').textContent = theme === 'dark' ? 'Theme: Dark' : 'Theme: Light'
+}
+
+applyTheme(document.documentElement.dataset.theme)
+darkScheme.addEventListener('change', () => {
+  if (!chosenTheme) applyTheme(darkScheme.matches ? 'dark' : 'light')
+})
+$('theme-toggle').addEventListener('click', () => {
+  chosenTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'
+  applyTheme(chosenTheme)
+  try { localStorage.setItem('theme', chosenTheme) } catch {}
+})
 
 async function init() {
   if (location.protocol === 'file:') {
